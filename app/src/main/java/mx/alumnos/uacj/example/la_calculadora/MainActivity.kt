@@ -1,5 +1,6 @@
 package mx.alumnos.uacj.example.la_calculadora
 
+import android.R.attr.strokeWidth
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -8,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -17,7 +19,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +29,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -54,13 +61,14 @@ enum class OperacionesAritmeticas{
     Resta,
     Multiplicacion,
     Division,
+    Cuadrado,
     Resultado
 }
 
 var hileras_de_botones_a_dibujar = arrayOf(
     arrayOf(
         BotonModelo("boton_7", "7", OperacionesAritmeticas.Multiplicacion, "*"),
-        BotonModelo("boton_8", "8",),
+        BotonModelo("boton_8", "8", OperacionesAritmeticas.Cuadrado, "x²"),
         BotonModelo("boton_9", "9", OperacionesAritmeticas.Division, "/")
     ),
     arrayOf(
@@ -104,8 +112,7 @@ fun Calculadora() {
         Log.v("BOTONES-INTERFZ", "Se ha pulsado el boton ${boton.id} de la interfaz")
         Log.v("OPERACION_SELECIONADA", "La operacion selecionada es ${operacion_seleccionada.value}")
 
-        when(estado_de_la_calculadora.value)
-        {
+        when(estado_de_la_calculadora.value){
             EstadosCalculadora.CuandoEstaEnCero -> {
                 if(boton.id == "boton_0"){
                     return
@@ -130,12 +137,21 @@ fun Calculadora() {
                 if(boton.operacion_aritmetica != OperacionesAritmeticas.Ninguna  &&
                     boton.operacion_aritmetica != OperacionesAritmeticas.Resultado
                     ){
-                    operacion_seleccionada.value = boton.operacion_aritmetica
-                    estado_de_la_calculadora.value = EstadosCalculadora.CuandoEstaEnCero
+                        if(boton.id == "boton_8")
+                        {
+                            operacion_seleccionada.value = boton.operacion_aritmetica
 
-                    numero_anterior.value = pantalla_calculadora.value
+                            pantalla_calculadora.value = (pantalla_calculadora.value.toInt() * pantalla_calculadora.value.toInt()).toString()
+                            estado_de_la_calculadora.value = EstadosCalculadora.MostrarResultado
+                        }
+                        else{
+                            operacion_seleccionada.value = boton.operacion_aritmetica
+                            estado_de_la_calculadora.value = EstadosCalculadora.CuandoEstaEnCero
 
-                    pantalla_calculadora.value = "0"
+                            numero_anterior.value = pantalla_calculadora.value
+
+                            pantalla_calculadora.value = "0"
+                        }
                     return
                 }// Aqui imprimimos el resultado
 
@@ -145,19 +161,20 @@ fun Calculadora() {
 
                     when(operacion_seleccionada.value){
                         OperacionesAritmeticas.Suma -> {
-                            pantalla_calculadora.value = numero_anterior.value + "+" + pantalla_calculadora.value
+                            pantalla_calculadora.value = (numero_anterior.value.toInt() + pantalla_calculadora.value.toInt()).toString()
                         }
                         OperacionesAritmeticas.Resta ->{
-                            pantalla_calculadora.value = numero_anterior.value + "-" + pantalla_calculadora.value
+                            pantalla_calculadora.value = (numero_anterior.value.toInt() - pantalla_calculadora.value.toInt()).toString()
                         }
                         OperacionesAritmeticas.Multiplicacion ->{
-                            pantalla_calculadora.value = numero_anterior.value + "*" + pantalla_calculadora.value
+                            pantalla_calculadora.value = (numero_anterior.value.toInt() * pantalla_calculadora.value.toInt()).toString()
                         }
                         OperacionesAritmeticas.Division ->{
-                            pantalla_calculadora.value = numero_anterior.value + "/" + pantalla_calculadora.value
+                            pantalla_calculadora.value = (numero_anterior.value.toInt() / pantalla_calculadora.value.toInt()).toString()
                         }
                         else ->{}
                     }
+
 
                     estado_de_la_calculadora.value = EstadosCalculadora.MostrarResultado
                     return
@@ -165,6 +182,7 @@ fun Calculadora() {
 
                 estado_de_la_calculadora.value = EstadosCalculadora.AgregandoNumeros
             }
+
 
             EstadosCalculadora.MostrarResultado ->{
                 numero_anterior.value = ""
@@ -179,21 +197,28 @@ fun Calculadora() {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally) {
         Text(text = "${pantalla_calculadora.value}", modifier =  Modifier
-            .padding(10.dp)
             .fillMaxWidth()
             .fillMaxHeight(0.33f)
-            .background(Color.Blue)
-            .height(50.dp),
+            .background(Color.Gray)
+            .padding(25.dp)
+            .height(50.dp)
+            .drawBehind{
+                drawLine(
+                    Color.LightGray,
+                    Offset(-70f, 720f),
+                    Offset(size.width+70, 720f),
+                    25f
+                )
+            },
             textAlign = TextAlign.Right,
-            color = Color.Red,
+            color = Color.White,
             fontSize = 56.sp
         )
 
-        // Deberia jugar mas con el estilo de aqui
-        Column (modifier = Modifier.fillMaxSize().background(Color.DarkGray)) {
+        Column (modifier = Modifier.fillMaxHeight().background(Color.DarkGray)) {
                 for (hilera_de_botones in hileras_de_botones_a_dibujar) {
                     Row(horizontalArrangement = Arrangement.SpaceAround,
-                    modifier = Modifier.fillMaxWidth()){
+                    modifier = Modifier.fillMaxWidth().height(150.dp)){
                         for(boton_a_dibujar in hilera_de_botones) {
                             when(estado_de_la_calculadora.value){
                                 EstadosCalculadora.SeleccionandoOperacion -> {
@@ -223,17 +248,22 @@ fun Calculadora() {
 
 @Composable
 fun Boton(etiqueta: String, alPulsar: () -> Unit = {}){
-    Button(onClick = alPulsar) {
-        Image(
-            painter = painterResource(R.drawable.makima),
-            contentDescription = "Foto de mami Makima",
-            modifier = Modifier.size(25.dp)
-        )
-        Text(etiqueta, modifier = Modifier
-            //.background(Color.Green)
-            .background(Color.Green),
+    Button(onClick = alPulsar, modifier = Modifier.padding(10.dp).width(80.dp).height(100.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Gray
+        )) {
+        /*Box{
+            Image(
+                painter = painterResource(R.drawable.makima),
+                contentDescription = "Foto de mami Makima",
+                modifier = Modifier.size(25.dp)
+            )
+
+        }*/
+        Text(etiqueta, modifier = Modifier,
             textAlign = TextAlign.Center,
-            color = Color.Red
+            color = Color.White,
+            fontSize = 20.sp,
         )
     }
 
